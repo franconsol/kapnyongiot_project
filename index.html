@@ -95,6 +95,16 @@
         alert('Invalid credentials. Please try again.');
       }
     }
+
+    // Demo preload data for testing
+if (!localStorage.getItem('members')) {
+  const members = [
+    { name: "Dorothy Kandie", email: "kandie@example.com", phone: "0712345678", password: "Kap1234" },
+    { name: "Ruth Kibii", email: "kibii@example.com", phone: "0711122233", password: "Kap1234" },
+  ];
+  localStorage.setItem('members', JSON.stringify(members));
+}
+
   </script>
 </body>
 </html>
