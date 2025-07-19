@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Kapnyongiot Login</title>
+  <link rel="icon" href="fabicon.png" type="image/png">
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f2f2f2;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+    }
+    .login-box {
+      background: white;
+      padding: 30px;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.2);
+      width: 300px;
+      text-align: center;
+    }
+    .login-box img {
+      width: 80px;
+      margin-bottom: 10px;
+    }
+    .login-box h2 {
+      margin-bottom: 20px;
+    }
+    .login-box input {
+      width: 100%;
+      padding: 10px;
+      margin-bottom: 15px;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+    }
+    .login-box button {
+      width: 100%;
+      padding: 10px;
+      background: #004d00;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    .login-box button:hover {
+      background: #006600;
+    }
+  </style>
+</head>
+<body>
+  <div class="login-box">
+    <img src="logo.png" alt="Logo">
+    <h2>Login</h2>
+    <input type="text" id="phone" placeholder="Phone or Username">
+    <input type="password" id="password" placeholder="Password">
+    <button onclick="login()">Login</button>
+  </div>
+
+  <script>
+    // Seed admin if not already present
+    if (!localStorage.getItem('admin')) {
+      localStorage.setItem('admin', JSON.stringify({
+        phone: 'admin',
+        password: 'admin123'
+      }));
+    }
+
+    function login() {
+      const phone = document.getElementById('phone').value.trim();
+      const password = document.getElementById('password').value.trim();
+
+      // Admin login
+      const admin = JSON.parse(localStorage.getItem('admin'));
+      if (phone === admin.phone && password === admin.password) {
+        localStorage.setItem('adminLoggedIn', 'true');
+        window.location.href = 'admin.html';
+        return;
+      }
+
+      // Member login
+      const members = JSON.parse(localStorage.getItem('members')) || [];
+      const user = members.find(m => m.phone === phone && m.password === password);
+      if (user) {
+        localStorage.setItem('loggedInUser', JSON.stringify(user));
+        if (password === 'Kap1234') {
+          localStorage.setItem('forcePasswordChange', 'true');
+        } else {
+          localStorage.removeItem('forcePasswordChange');
+        }
+        window.location.href = 'dashboard.html';
+      } else {
+        alert('Invalid credentials. Please try again.');
+      }
+    }
+  </script>
+</body>
+</html>

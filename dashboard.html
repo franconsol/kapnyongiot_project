@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Kapnyongiot | Member Dashboard</title>
+  <link rel="icon" href="favicon.png" type="image/png">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Segoe UI', sans-serif; display: flex; min-height: 100vh; background: #f4f7f9; }
+    .sidebar {
+      width: 220px;
+      background: #004d00;
+      color: white;
+      display: flex;
+      flex-direction: column;
+      padding-top: 20px;
+    }
+    .sidebar h2 {
+      text-align: center;
+      font-size: 22px;
+      margin-bottom: 30px;
+    }
+    .sidebar button {
+      background: none;
+      border: none;
+      color: white;
+      padding: 15px 20px;
+      text-align: left;
+      width: 100%;
+      font-size: 16px;
+      cursor: pointer;
+    }
+    .sidebar button:hover, .sidebar button.active {
+      background-color: #006600;
+    }
+    .main {
+      flex: 1;
+      padding: 30px;
+    }
+    .section { display: none; }
+    .section.active { display: block; }
+    .profile-photo {
+      width: 100px; height: 100px;
+      border-radius: 50%;
+      object-fit: cover;
+      margin-bottom: 10px;
+    }
+    input, textarea {
+      display: block; width: 100%; padding: 10px;
+      margin: 10px 0; border: 1px solid #ccc; border-radius: 6px;
+    }
+    table {
+      width: 100%; border-collapse: collapse; margin-top: 20px;
+    }
+    th, td {
+      border: 1px solid #ccc; padding: 10px; text-align: center;
+    }
+    th { background: #eee; }
+    @media(max-width: 768px) {
+      .sidebar { width: 100px; font-size: 12px; }
+      .sidebar h2 { display: none; }
+    }
+    /* Match admin-style UHC table */
+#uhcTable {
+  border-collapse: collapse;
+  width: auto; /* makes the table only as wide as needed */
+  table-layout: auto; /* allows content to define column width */
+  margin-top: 20px;
+  overflow-x: auto;
+}
+
+#uhcTable th, #uhcTable td {
+  border: 1px solid #ccc;
+  padding: 4px 20px;
+  text-align: center;
+  white-space: nowrap;       /* keeps content in one line */
+  font-size: 14px;
+  /*max-width: 250px;            limit max width */
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+#uhcTable th {
+  background: #004d00;
+  color: white;
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
+
+#uhcTable td.amount-col {
+  text-align: right;
+}
+
+#uhcTable td.sticky-col {
+  position: sticky;
+  left: 0;
+  background: #fff;
+  z-index: 1;
+  text-align: left;
+
+}
+
+#uhcTable td.empty {
+  background-color: #ffe6e6;
+  color: #900;
+}
+
+#uhcChart {
+  max-width: 100%;
+  background-color: #ffffff;
+  padding: 15px;
+  border: 1px solid #ccc;
+  border-radius: 10px;
+  margin-top: 10px;
+}
+
+
+  </style>
+</head>
+<body>
+  <div class="sidebar">
+    <h2>Dashboard</h2>
+    <button class="active" onclick="switchTab('profile')">👤 Profile</button>
+    <button onclick="switchTab('password')">🔒 Change Password</button>
+    <button onclick="switchTab('uhc')">💳 UHC</button>
+    <button onclick="switchTab('announcements')">📢 Announcements</button>
+    <button onclick="switchTab('contact')">✉️ Contact Admin</button>
+    <button onclick="logout()">🚪 Logout</button>
+  </div>
+
+  <div class="main">
+    <!-- PROFILE -->
+    <div id="profile" class="section active">
+      <h2>My Profile</h2>
+      <img id="profilePhoto" class="profile-photo" src="" alt="Photo"/>
+      <input type="file" onchange="uploadPhoto(event)">
+      <input id="memberName" placeholder="Name"/>
+      <input id="memberEmail" placeholder="Email"/>
+      <input id="memberPhone" placeholder="Phone" disabled />
+      <button onclick="saveProfile()">Save Changes</button>
+    </div>
+
+    <!-- PASSWORD -->
+    <div id="password" class="section">
+      <h2>Change Password</h2>
+      <input type="password" id="newPassword" placeholder="New Password"/>
+      <input type="password" id="confirmPassword" placeholder="Confirm Password"/>
+      <button onclick="changePassword()">Update Password</button>
+    </div>
+
+    <!-- UHC -->
+<div id="uhc" class="section">
+  <h2>UHC Contributions</h2>
+  <div class="uhc-container">
+    <div id="uhcSummary" class="uhc-summary-box" style="margin-bottom: 20px; padding: 15px; background: #eafae9; border: 1px solid #cde6cc; border-radius: 10px;">
+      <strong>Total Paid:</strong> <span id="uhcTotalPaid" style="margin-right: 20px;"></span>
+      <strong>Months Paid:</strong> <span id="uhcMonthsPaid" style="margin-right: 20px;"></span>
+      <strong>Months Unpaid:</strong> <span id="uhcMonthsUnpaid"></span>
+    </div>
+
+    <table id="uhcTable">
+      <thead><tr><th>Month</th><th>Amount (KES)</th></tr></thead>
+      <tbody></tbody>
+    </table>
+    <button onclick="exportUHCCSV()" style="background-color: #006600;border: none;padding: 5px 10px; color: #eff3ef;margin-top: 10px;">📤 Download</button>
+
+    <h2 style="margin-top: 30px;">UHC Contribution Overview</h2>
+    <div style="overflow-x:auto;"><canvas id="uhcChart" style="width: 100%; max-width: 800px; height: 400px;"></canvas></div>
+     
+
+
+
+  </div>
+</div>
+
+    <!-- ANNOUNCEMENTS -->
+    <div id="announcements" class="section">
+      <h2>Family Announcements</h2>
+      <ul id="announcementList"></ul>
+    </div>
+
+    <!-- CONTACT -->
+    <div id="contact" class="section">
+      <h2>Contact Admin</h2>
+      <textarea id="messageText" rows="4" placeholder="Write your message..."></textarea>
+      <button onclick="sendMessage()">Send Message</button>
+    </div>
+  </div>
+
+  <script>
+    const user = JSON.parse(localStorage.getItem('loggedInUser'));
+    if (!user) location.href = 'index.html';
+
+    function switchTab(id) {
+      document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+      document.querySelectorAll('.sidebar button').forEach(b => b.classList.remove('active'));
+      document.getElementById(id).classList.add('active');
+      event.target.classList.add('active');
+    }
+
+    // Prefill profile
+    document.getElementById('memberName').value = user.name;
+    document.getElementById('memberEmail').value = user.email;
+    document.getElementById('memberPhone').value = user.phone;
+    if (user.photo) document.getElementById('profilePhoto').src = user.photo;
+
+    function uploadPhoto(e) {
+      const reader = new FileReader();
+      reader.onload = () => {
+        document.getElementById('profilePhoto').src = reader.result;
+        user.photo = reader.result;
+      }
+      reader.readAsDataURL(e.target.files[0]);
+    }
+
+    function saveProfile() {
+      user.name = document.getElementById('memberName').value;
+      user.email = document.getElementById('memberEmail').value;
+      localStorage.setItem('loggedInUser', JSON.stringify(user));
+      let members = JSON.parse(localStorage.getItem('members')) || [];
+      let index = members.findIndex(m => m.phone === user.phone);
+      if (index !== -1) members[index] = user;
+      localStorage.setItem('members', JSON.stringify(members));
+      alert("Profile updated!");
+    }
+
+    function changePassword() {
+      const newPass = document.getElementById('newPassword').value;
+      const confirmPass = document.getElementById('confirmPassword').value;
+      if (newPass !== confirmPass) return alert("Passwords do not match.");
+      user.password = newPass;
+      localStorage.setItem('loggedInUser', JSON.stringify(user));
+      let members = JSON.parse(localStorage.getItem('members')) || [];
+      let index = members.findIndex(m => m.phone === user.phone);
+      if (index !== -1) members[index] = user;
+      localStorage.setItem('members', JSON.stringify(members));
+      localStorage.removeItem('forcePasswordChange');
+      alert("Password updated.");
+    }
+
+    function sendMessage() {
+      const msg = document.getElementById('messageText').value.trim();
+      if (!msg) return alert("Enter a message");
+      const messages = JSON.parse(localStorage.getItem('messages')) || [];
+      messages.push({ phone: user.phone, name: user.name, message: msg, date: new Date().toLocaleString() });
+      localStorage.setItem('messages', JSON.stringify(messages));
+      document.getElementById('messageText').value = "";
+      alert("Message sent to admin");
+    }
+
+    function logout() {
+      localStorage.removeItem('loggedInUser');
+      location.href = 'index.html';
+    }
+
+    // Show UHC contributions
+function loadUHC() {
+  const data = JSON.parse(localStorage.getItem('uhcData')) || {};
+  const record = data[user.phone] || {};
+  const tbody = document.querySelector("#uhcTable tbody");
+  const thead = document.querySelector("#uhcTable thead");
+
+  const monthOrder = ["Jan", "Feb", "Mar", "Apr", "May", "Jun",
+                      "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+  // Extract all years
+  const years = [...new Set(Object.keys(record).map(m => m.split(' ')[1]))].sort();
+
+  // Build table header
+  let header = `<tr><th class="sticky-col">Year</th>`;
+  monthOrder.forEach(m => header += `<th>${m}</th>`);
+  header += `<th>Total</th></tr>`;
+  thead.innerHTML = header;
+  
+  
+
+  // Body rows
+  tbody.innerHTML = '';
+  years.forEach(year => {
+    let row = `<td class="sticky-col">${year}</td>`;
+    let rowTotal = 0;
+    monthOrder.forEach(month => {
+      const key = `${month} ${year}`;
+      const amount = record[key] || '';
+      const emptyClass = amount === '' || amount === '0' ? 'empty' : '';
+      row += `<td class="amount-col ${emptyClass}">${amount}</td>`;
+      rowTotal += Number(amount) || 0;
+    });
+    row += `<td style="font-weight:bold;">${rowTotal}</td>`;
+    tbody.innerHTML += `<tr>${row}</tr>`;
+  });
+
+  // Remove old footer if exists
+  const oldFoot = document.querySelector("#uhcTable tfoot");
+  if (oldFoot) oldFoot.remove();
+  renderUHCChart(record);
+  
+}
+
+
+function exportUHCCSV() {
+  const data = JSON.parse(localStorage.getItem('uhcData')) || {};
+  const record = data[user.phone] || {};
+
+  const allMonthKeys = Object.keys(record).sort((a, b) => new Date(a) - new Date(b));
+  const monthsOrder = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+  const monthMap = {}; // { 'Jan': { '2024': val, '2025': val }, ... }
+  const yearTotals = {}; // Totals per year
+
+  allMonthKeys.forEach(key => {
+    const [monthName, year] = key.split(' ');
+    if (!monthMap[monthName]) monthMap[monthName] = {};
+    const val = Number(record[key] || 0);
+    monthMap[monthName][year] = val;
+    yearTotals[year] = (yearTotals[year] || 0) + val;
+  });
+
+  const allYears = [...new Set(allMonthKeys.map(m => m.split(' ')[1]))].sort();
+
+  const rows = [];
+  rows.push(['Month', ...allYears, 'Total']);
+
+  let grandTotal = 0;
+  monthsOrder.forEach(month => {
+    const row = [month];
+    let rowTotal = 0;
+    allYears.forEach(year => {
+      const val = monthMap[month]?.[year] || 0;
+      row.push(val);
+      rowTotal += Number(val);
+    });
+    grandTotal += rowTotal;
+    row.push(rowTotal);
+    rows.push(row);
+  });
+
+  // Add footer with yearly totals and grand total
+  const footer = ['Total'];
+  allYears.forEach(year => {
+    footer.push(yearTotals[year] || 0);
+  });
+  footer.push(grandTotal);
+  rows.push(footer);
+
+  const csv = rows.map(r => r.join(',')).join('\n');
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = 'uhc_contributions_by_month.csv';
+  link.click();
+}
+
+function renderUHCChart(record) {
+  const chartCanvas = document.getElementById('uhcChart');
+
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+                  'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+  const totals = new Array(12).fill(0);
+  for (const key in record) {
+    const [monthName] = key.split(' ');
+    const i = months.indexOf(monthName);
+    if (i !== -1) {
+      totals[i] += Number(record[key]) || 0;
+    }
+  }
+
+  if (window.uhcChartInstance) window.uhcChartInstance.destroy();
+
+  window.uhcChartInstance = new Chart(chartCanvas, {
+    type: 'bar',
+    data: {
+      labels: months,
+      datasets: [{
+        label: 'Total UHC Contributions',
+        data: totals,
+        backgroundColor: '#4caf50',
+        borderColor: '#388e3c',
+        borderWidth: 1
+      }]
+    },
+    options: {
+      responsive: true,
+      scales: {
+        y: {
+          beginAtZero: true,
+          ticks: {
+            callback: value => `Ksh ${value}`
+          }
+        }
+      }
+    }
+  });
+}
+
+
+function updateUHCSummary() {
+  const data = JSON.parse(localStorage.getItem('uhcData')) || {};
+  const record = data[user.phone] || {};
+
+  const totalPaid = Object.values(record).reduce((sum, val) => sum + (Number(val) || 0), 0);
+  const monthsPaid = Object.values(record).filter(v => Number(v) > 0).length;
+  const monthsUnpaid = Object.values(record).filter(v => Number(v) <= 0 || !v).length;
+
+  document.getElementById('uhcTotalPaid').textContent = `KES ${totalPaid.toLocaleString()}`;
+  document.getElementById('uhcMonthsPaid').textContent = `${monthsPaid} month(s)`;
+  document.getElementById('uhcMonthsUnpaid').textContent = `${monthsUnpaid} month(s)`;
+}
+
+
+
+
+    // Show announcements
+    function loadAnnouncements() {
+      const items = JSON.parse(localStorage.getItem('announcements')) || [];
+      const list = document.getElementById('announcementList');
+      list.innerHTML = '';
+      items.forEach(a => {
+        list.innerHTML += `<li>${a}</li>`;
+      });
+    }
+
+    loadUHC();
+    loadAnnouncements();
+    updateUHCSummary();
+
+    if (localStorage.getItem('forcePasswordChange') === 'true') {
+      switchTab('password');
+      alert("Please change your default password (Kap1234)");
+    }
+  </script>
+  
+
+</body>
+</html>

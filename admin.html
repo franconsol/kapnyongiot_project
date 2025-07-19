@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Kapnyongiot Admin Panel</title>
+  <link rel="icon" href="favicon.png" type="image/png" />
+  <style>
+    body { margin: 0; font-family: Arial, sans-serif; background: #f4f4f4; }
+
+.header {
+  background: #004d00;
+  color: white;
+  padding: 15px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 999;
+}
+.tab-buttons {
+  display: flex;
+  gap: 10px;
+  padding: 6px 10px;
+  margin-bottom: 5px; /* Optional: explicitly control spacing */
+}
+    .tab-buttons button {
+      padding: 10px 15px; border: none; cursor: pointer;
+      background: #b9a6a6; border-radius: 5px;
+    }
+    .tab-buttons button:hover {
+      background: #ccc;
+    }
+    .main { padding: 20px; margin-top: 60px; }
+    .tab-content { display: none; }
+    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+    th, td { padding: 10px; border: 1px solid #ccc; text-align: left; }
+    th { background: #eee; }
+    input, select {
+      padding: 8px; width: 100%; margin: 5px 0;
+      border: 1px solid #ccc; border-radius: 4px;
+    }
+    button {
+      padding: 10px 15px; background: #004d00; color: white;
+      border: none; border-radius: 4px; cursor: pointer;
+    }
+    button:hover { background: #006600; }
+    .modal {
+      display: none; position: fixed; z-index: 999;
+      top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5);
+      justify-content: center; align-items: center;
+    }
+    .modal-content {
+      background: white; padding: 20px; border-radius: 8px;
+      max-width: 400px; width: 90%;
+    }
+    .modal input { margin-bottom: 10px; }
+    .export-buttons { margin-top: 20px; }
+    .export-buttons button { margin-right: 10px; }
+
+    .tab-content { padding: 10px; }
+    .uhc-container { overflow-x: auto; }
+    .uhc-table { border-collapse: collapse; width: max-content; min-width: 100%; }
+    .uhc-table th, .uhc-table td {
+      border: 1px solid #ccc;
+      padding: 6px;
+      text-align: center;
+    }
+    .uhc-table th {
+      background: #004d00;
+      color: white;
+      position: sticky;
+      top: 0;
+      z-index: 2;
+    }
+    .uhc-table td input {
+      width: 80px;
+      padding: 4px;
+      text-align: right;
+
+      
+    }
+
+    .uhc-table td.fixed-col { text-align: left; }
+    .fixed-col {
+      position: sticky;
+      left: 0;
+      background: #fff;
+      z-index: 3;
+    }
+    .fixed-col2 {
+      position: sticky;
+      left: 120px;
+      background: #fff;
+      z-index: 3;
+    }
+    .uhc-buttons { margin-top: 15px; }
+    .uhc-buttons button {
+      margin-right: 10px;
+    }
+    .empty-input {
+      background-color: #ffe6e6;
+    }
+    tfoot td {
+      font-weight: bold;
+      background-color: #d8f3dc;
+    }
+
+    .filter-box {
+  margin-bottom: 0px;
+  padding: 4px 8px;
+  font-size: 14px;
+  height: 20px;
+  width: 250px;
+}
+    .note-icon { position: absolute; right: 4px; top: 4px; cursor: pointer; font-size: 12px; color: #888; }
+    .note-tooltip { position: absolute; background: #fff; border: 1px solid #ccc; padding: 5px; font-size: 12px; display: none; z-index: 5; }
+
+
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h2>Kapnyongiot Admin Dashboard</h2>
+      <div class="tab-buttons">
+    <button onclick="showTab('members')">👥 Members</button>
+    <button onclick="showTab('messages')">📬 Messages</button>
+    <button onclick="showTab('uhc')">💳 UHC Contributions</button>
+    <button onclick="showTab('settings')">🛠 Settings</button>
+    <button onclick="showTab('export')">📤 Export</button>
+  </div>
+  </div>
+
+
+
+  <div class="main">
+    <!-- MEMBERS TAB -->
+    <div id="members" class="tab-content">
+      <h3>Registered Members</h3>
+      <table><thead><tr><th>Name</th><th>Email</th><th>Phone</th><th>Password</th><th>Action</th></tr></thead><tbody id="memberTable"></tbody></table>
+      <h3 style="margin-top: 30px;">Add New Member</h3>
+      <input id="name" placeholder="Full Name">
+      <input id="email" placeholder="Email Address">
+      <input id="phone" placeholder="Phone Number (10 digits)">
+      <input id="password" placeholder="Password (e.g. Kap1234)">
+      <button onclick="addMember()">Add Member</button>
+    </div>
+
+    <!-- MESSAGES TAB -->
+    <div id="messages" class="tab-content">
+      <h3>Messages from Members</h3>
+      <table><thead><tr><th>Name</th><th>Email</th><th>Message</th><th>Date</th></tr></thead><tbody id="messageTable"></tbody></table>
+    </div>
+
+    <!-- UHC CONTRIBUTIONS TAB -->
+         <div id="uhc" class="tab-content">
+      <h3>💳 UHC Contributions</h3>
+    <input class="filter-box" id="uhcSearch" placeholder="🔍 Search by name or phone..." onkeyup="renderUHCTable()">
+      <div class="uhc-container">
+        <table class="uhc-table" id="uhcTable"></table>
+      </div>
+      <div class="uhc-buttons">
+        <button onclick="saveUHC()">💾 Save</button>
+        <button onclick="exportUHCCSV()">📤 Export CSV</button>
+      </div>
+    </div>
+
+    <!-- SETTINGS TAB -->
+    <div id="settings" class="tab-content">
+      <h3>Change Admin Password</h3>
+      <input type="password" id="oldPass" placeholder="Old Password">
+      <input type="password" id="newPass" placeholder="New Password">
+      <input type="password" id="confirmPass" placeholder="Confirm New Password">
+      <button onclick="changeAdminPassword()">Update Password</button>
+      <h3 style="margin-top: 30px;">Logout</h3>
+      <button style="background:#b30000" onclick="confirmLogout()">Logout</button>
+    </div>
+
+
+        <!-- EXPORT TAB -->
+    <div id="export" class="tab-content">
+      <h3>Export All Data</h3>
+      <div class="export-buttons">
+        <button onclick="exportCSV('members')">Export Members CSV</button>
+        <button onclick="exportCSV('messages')">Export Messages CSV</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+
+
+
+
+
+
+  <!-- Admin Login Modal -->
+  <div class="modal" id="loginModal">
+    <div class="modal-content">
+      <h3>Admin Login</h3>
+      <input type="password" id="adminPassword" placeholder="Enter admin password">
+      <button onclick="verifyAdmin()">Login</button>
+    </div>
+  </div>
+
+  <!-- Logout Modal -->
+  <div class="modal" id="logoutModal">
+    <div class="modal-content">
+      <h3>Are you sure you want to logout?</h3>
+      <button onclick="doLogout()">Yes, Logout</button>
+      <button onclick="document.getElementById('logoutModal').style.display='none'">Cancel</button>
+    </div>
+  </div>
+
+  <script>
+    
+    if (!localStorage.getItem('admin')) {
+      localStorage.setItem('admin', JSON.stringify({ phone: 'admin', password: 'admin123' }));
+    }
+
+    const admin = JSON.parse(localStorage.getItem('admin'));
+
+    window.onload = () => {
+  if (!localStorage.getItem("adminLoggedIn")) {
+    document.getElementById("loginModal").style.display = "flex";
+  } else {
+    renderMembers();
+    renderMessages();
+    renderUHCTable();         // ✅ ensure this runs
+    showTab('uhc');           // ✅ switch default tab to UHC
+  }
+};
+
+
+    function showTab(id) {
+      document.querySelectorAll('.tab-content').forEach(tab => tab.style.display = 'none');
+      document.getElementById(id).style.display = 'block';
+    }
+
+    function verifyAdmin() {
+  const input = document.getElementById("adminPassword").value;
+  if (input === admin.password) {
+    localStorage.setItem("adminLoggedIn", "true");
+    document.getElementById("loginModal").style.display = "none";
+    renderMembers();
+    renderMessages();
+    renderUHCTable(); // ✅ Fix here
+    showTab('members');
+    showTab('uhc');
+  } else {
+    alert("Incorrect password");
+  }
+}
+
+
+    function changeAdminPassword() {
+      const oldPass = document.getElementById("oldPass").value;
+      const newPass = document.getElementById("newPass").value;
+      const confirmPass = document.getElementById("confirmPass").value;
+
+      if (oldPass !== admin.password) return alert("Incorrect old password");
+      if (!newPass || newPass !== confirmPass) return alert("Passwords do not match or empty");
+
+      admin.password = newPass;
+      localStorage.setItem("admin", JSON.stringify(admin));
+      alert("Password updated");
+      document.getElementById("oldPass").value = "";
+      document.getElementById("newPass").value = "";
+      document.getElementById("confirmPass").value = "";
+    }
+
+    function confirmLogout() {
+      document.getElementById("logoutModal").style.display = "flex";
+    }
+
+    function doLogout() {
+      localStorage.removeItem("adminLoggedIn");
+      window.location.replace("index.html");
+    }
+
+    function renderMembers() {
+      const members = JSON.parse(localStorage.getItem("members")) || [];
+      const table = document.getElementById("memberTable");
+      table.innerHTML = "";
+      members.forEach((m, i) => {
+        table.innerHTML += `<tr>
+          <td><input value="${m.name}" onchange="updateMember(${i}, 'name', this.value)"></td>
+          <td><input value="${m.email}" onchange="updateMember(${i}, 'email', this.value)"></td>
+          <td><input value="${m.phone}" disabled></td>
+          <td><input value="${m.password}" onchange="updateMember(${i}, 'password', this.value)"></td>
+          <td><button onclick="deleteMember(${i})">Delete</button></td>
+        </tr>`;
+      });
+    }
+
+    function addMember() {
+      const name = document.getElementById("name").value.trim();
+      const email = document.getElementById("email").value.trim();
+      const phone = document.getElementById("phone").value.trim();
+      const password = document.getElementById("password").value.trim();
+
+      if (!name || !email || !phone || !password) return alert("Fill all fields");
+      if (phone.length !== 10 || isNaN(phone)) return alert("Phone must be 10 digits");
+
+      let members = JSON.parse(localStorage.getItem("members")) || [];
+      if (members.some(m => m.phone === phone)) return alert("Phone already exists");
+
+      members.push({ name, email, phone, password });
+      localStorage.setItem("members", JSON.stringify(members));
+      renderMembers();
+      ["name","email","phone","password"].forEach(id => document.getElementById(id).value = "");
+    }
+
+    function updateMember(index, key, value) {
+      const members = JSON.parse(localStorage.getItem("members")) || [];
+      members[index][key] = value;
+      localStorage.setItem("members", JSON.stringify(members));
+    }
+
+    function deleteMember(index) {
+      if (!confirm("Delete this member?")) return;
+      const members = JSON.parse(localStorage.getItem("members")) || [];
+      members.splice(index, 1);
+      localStorage.setItem("members", JSON.stringify(members));
+      renderMembers();
+    }
+
+    function renderMessages() {
+      const messages = JSON.parse(localStorage.getItem("messages")) || [];
+      const table = document.getElementById("messageTable");
+      table.innerHTML = "";
+      messages.forEach(msg => {
+        table.innerHTML += `<tr><td>${msg.name}</td><td>${msg.email}</td><td>${msg.message}</td><td>${msg.date}</td></tr>`;
+      });
+    }
+
+    function exportCSV(type) {
+      let data = [];
+      if (type === 'members') data = JSON.parse(localStorage.getItem("members")) || [];
+      if (type === 'messages') data = JSON.parse(localStorage.getItem("messages")) || [];
+      if (!data.length) return alert("No data to export");
+
+      const headers = Object.keys(data[0]);
+      const csv = [headers.join(",")].concat(data.map(row => headers.map(h => JSON.stringify(row[h])).join(","))).join("\n");
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${type}_export.csv`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    }
+
+     const startMonth = new Date(2024, 5); // June 2024
+    const currentMonth = new Date();
+
+    function generateMonths() {
+  let months = [];
+  let temp = new Date(startMonth);
+  let future = new Date(); // current month
+  future.setMonth(future.getMonth() + 1); // add one month ahead
+
+  while (temp <= future) {
+    months.push(temp.toLocaleString('default', { month: 'short', year: 'numeric' }));
+    temp.setMonth(temp.getMonth() + 1);
+  }
+
+  return months;
+}
+
+
+
+    function renderUHCTable() {
+      const members = JSON.parse(localStorage.getItem('members')) || [];
+      const uhcData = JSON.parse(localStorage.getItem('uhcData')) || {};
+      const months = generateMonths();
+      const search = document.getElementById('uhcSearch').value.toLowerCase();
+      const filteredMembers = members.filter(m =>
+        m.name.toLowerCase().includes(search) || m.phone.includes(search)
+      );
+      
+      let table = '<thead><tr><th class="fixed-col">Name</th><th class="fixed-col2">Phone</th>';
+      months.forEach(m => table += `<th>${m}</th>`);
+      table += '<th>Total</th></tr></thead><tbody>';
+
+        
+
+      filteredMembers.forEach(member => {
+
+        const key = member.phone;
+        if (!uhcData[key]) uhcData[key] = {};
+        let rowTotal = 0;
+        table += `<tr><td class="fixed-col">${member.name}</td><td class="fixed-col2">${member.phone}</td>`;
+        months.forEach(month => {
+          const val = uhcData[key][month] || '';
+          rowTotal += Number(val) || 0;
+          const emptyClass = val === '' ? 'empty-input' : '';
+          table += `<td><input class="${emptyClass}" data-phone="${key}" data-month="${month}" value="${val}"></td>`;
+        });
+        table += `<td><strong>${rowTotal}</strong></td></tr>`;
+      });
+
+      
+
+      // Add footer row for column totals
+      let colTotals = Array(months.length).fill(0);
+      members.forEach(member => {
+        const key = member.phone;
+        months.forEach((month, i) => {
+          const val = Number(uhcData[key]?.[month]) || 0;
+          colTotals[i] += val;
+        });
+      });
+      table += '<tfoot><tr><td colspan="2">Monthly Totals</td>';
+      colTotals.forEach(t => table += `<td>${t}</td>`);
+      table += '<td></td></tr></tfoot>';
+
+      document.getElementById('uhcTable').innerHTML = table;
+    }
+
+    function saveUHC() {
+      const inputs = document.querySelectorAll('#uhcTable input');
+      const uhcData = {};
+      inputs.forEach(input => {
+        const phone = input.dataset.phone;
+        const month = input.dataset.month;
+        if (!uhcData[phone]) uhcData[phone] = {};
+        uhcData[phone][month] = input.value;
+      });
+      localStorage.setItem('uhcData', JSON.stringify(uhcData));
+      alert('UHC data saved');
+      renderUHCTable();
+    }
+
+    
+
+    function exportUHCCSV() {
+      const uhcData = JSON.parse(localStorage.getItem('uhcData')) || {};
+      const members = JSON.parse(localStorage.getItem('members')) || [];
+      const months = generateMonths();
+      let csv = ['Name,Phone,' + months.join(',') + ',Total'];
+
+      members.forEach(member => {
+        const key = member.phone;
+        const row = [member.name, key];
+        let rowTotal = 0;
+        months.forEach(month => {
+          const val = uhcData[key]?.[month] || '';
+          row.push(val);
+          rowTotal += Number(val) || 0;
+        });
+        row.push(rowTotal);
+        csv.push(row.join(','));
+      });
+
+      const blob = new Blob([csv.join('\n')], { type: 'text/csv' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = 'uhc_contributions.csv';
+      link.click();
+    }
+
+    
+  </script>
+</body>
+</html>
